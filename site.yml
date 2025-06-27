@@ -1,8 +1,12 @@
 ---
-- hosts: raspberrypi
+- hosts: pi_group
   become: true
-  vars:
-    cloudflared_tunnel_name: "konfortes-pi"  
+
+  vars_prompt:
+    - name: "cloudflared_tunnel_id"
+      prompt: "Enter your Cloudflared Tunnel ID (without .json)"
+      private: no
+
   tasks:
     - name: Install required apt packages
       apt:
@@ -35,13 +39,6 @@
       args:
         creates: /usr/bin/cloudflared
 
-    - name: Install Ollama (dockerized)
-      shell: |
-        docker pull ollama/ollama:latest
-        docker run -d --name ollama --restart=always -p 11434:11434 ollama/ollama:latest
-      args:
-        creates: /var/lib/docker/containers
-
     # --- SYSTEMD SERVICES ---
     # The following tasks create systemd unit files for each service
 
@@ -54,31 +51,13 @@
           After=network.target
 
           [Service]
-          ExecStart=/usr/bin/cloudflared tunnel run
+          ExecStart=/usr/bin/cloudflared tunnel run {{ cloudflared_tunnel_id }}
           Restart=always
-          User=ubuntu
+          User=pi
 
           [Install]
           WantedBy=multi-user.target
       # TODO: You must manually create and configure your Cloudflare tunnel and credentials file.
-
-    - name: Create systemd service for Ollama (docker)
-      copy:
-        dest: /etc/systemd/system/ollama-docker.service
-        content: |
-          [Unit]
-          Description=Ollama Docker Container
-          After=docker.service
-          Requires=docker.service
-
-          [Service]
-          ExecStart=/usr/bin/docker start -a ollama
-          ExecStop=/usr/bin/docker stop ollama
-          Restart=always
-          User=ubuntu
-
-          [Install]
-          WantedBy=multi-user.target
 
     - name: Reload systemd
       systemd:
@@ -86,12 +65,9 @@
 
     - name: Enable and start services
       systemd:
-        name: "{{ item }}"
+        name: cloudflared.service
         enabled: yes
         state: started
-      loop:
-        - cloudflared.service
-        - ollama-docker.service
 
     - name: Ensure .cloudflared directory exists
       file:
@@ -103,8 +79,8 @@
 
     - name: Copy Cloudflared credentials file
       copy:
-        src: files/cloudflared/<TUNNEL_ID>.json  # <-- Replace with your actual credentials file
-        dest: /home/pi/.cloudflared/<TUNNEL_ID>.json
+        src: "files/cloudflared/{{ cloudflared_tunnel_id }}.json"
+        dest: "/home/pi/.cloudflared/{{ cloudflared_tunnel_id }}.json"
         owner: pi
         group: pi
         mode: '0600'
@@ -118,3 +94,8 @@
         group: pi
         mode: '0600'
       # Optional: Only if you have a config.yml 
+
+    - name: "PAUSE: Please set up the Argo Tunnel in Cloudflare, then press Enter to continue"
+      pause:
+        prompt: |
+          "Manual step required!\n\nGo to the Cloudflare dashboard and set up a CNAME record for n8n.konfortes.uk to point to your Argo Tunnel for this device. the tunnel url is {{ cloudflared_tunnel_id }}.cfargotunnel.com\nWhen you are done, press Enter to finish the playbook.\n\n(See README for details if needed.)\n\nPress Enter to continue..." 
