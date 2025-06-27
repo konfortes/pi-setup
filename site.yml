@@ -2,9 +2,7 @@
 - hosts: raspberrypi
   become: true
   vars:
-    repo_url: "<REPLACE_WITH_YOUR_GIT_REPO_URL>"  # TODO: Set your repo URL here
-    repo_dest: "/home/ubuntu/app"  # Change if you want a different path
-    cloudflared_tunnel_name: "<REPLACE_WITH_YOUR_TUNNEL_NAME>"  # Optional, for future use
+    cloudflared_tunnel_name: "konfortes-pi"  
   tasks:
     - name: Install required apt packages
       apt:
@@ -24,16 +22,9 @@
       args:
         creates: /usr/bin/docker
 
-    - name: Install docker-compose
-      get_url:
-        url: https://github.com/docker/compose/releases/download/v2.29.2/docker-compose-linux-aarch64
-        dest: /usr/local/bin/docker-compose
-        mode: '0755'
-      # Check for latest version if needed
-
     - name: Add user to docker group
       user:
-        name: ubuntu
+        name: pi
         groups: docker
         append: yes
 
@@ -44,18 +35,6 @@
       args:
         creates: /usr/bin/cloudflared
 
-    - name: Clone docker-compose repo
-      git:
-        repo: "{{ repo_url }}"
-        dest: "{{ repo_dest }}"
-        version: main
-      # TODO: Update repo_url above
-
-    - name: Pull docker images
-      shell: docker-compose pull
-      args:
-        chdir: "{{ repo_dest }}"
-
     - name: Install Ollama (dockerized)
       shell: |
         docker pull ollama/ollama:latest
@@ -65,25 +44,6 @@
 
     # --- SYSTEMD SERVICES ---
     # The following tasks create systemd unit files for each service
-
-    - name: Create systemd service for docker-compose
-      copy:
-        dest: /etc/systemd/system/docker-compose-app.service
-        content: |
-          [Unit]
-          Description=Docker Compose App
-          After=docker.service
-          Requires=docker.service
-
-          [Service]
-          Type=oneshot
-          RemainAfterExit=yes
-          WorkingDirectory={{ repo_dest }}
-          ExecStart=/usr/local/bin/docker-compose up -d
-          ExecStop=/usr/local/bin/docker-compose down
-
-          [Install]
-          WantedBy=multi-user.target
 
     - name: Create systemd service for Cloudflared
       copy:
@@ -130,6 +90,31 @@
         enabled: yes
         state: started
       loop:
-        - docker-compose-app.service
         - cloudflared.service
-        - ollama-docker.service 
+        - ollama-docker.service
+
+    - name: Ensure .cloudflared directory exists
+      file:
+        path: /home/pi/.cloudflared
+        state: directory
+        owner: pi
+        group: pi
+        mode: '0700'
+
+    - name: Copy Cloudflared credentials file
+      copy:
+        src: files/cloudflared/<TUNNEL_ID>.json  # <-- Replace with your actual credentials file
+        dest: /home/pi/.cloudflared/<TUNNEL_ID>.json
+        owner: pi
+        group: pi
+        mode: '0600'
+      # You must generate this file manually as described in the README
+
+    - name: Copy Cloudflared config file
+      copy:
+        src: files/cloudflared/config.yml  # <-- Replace with your actual config file if you have one
+        dest: /home/pi/.cloudflared/config.yml
+        owner: pi
+        group: pi
+        mode: '0600'
+      # Optional: Only if you have a config.yml 
