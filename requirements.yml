@@ -1,2 +1,20 @@
 # No external Ansible Galaxy roles required yet.
 # Add roles here if needed in the future. 
+
+# External Ansible Galaxy roles
+# Uncomment and modify as needed for your project
+
+# Example: Use a community Docker role instead of custom one
+# - name: geerlingguy.docker
+#   version: 7.0.0
+
+# Example: Use a community security role
+# - name: geerlingguy.security
+#   version: 1.0.0
+
+# Example: Use a community SSH role
+# - name: geerlingguy.ssh
+#   version: 1.0.0
+
+# To install external roles, run:
+# ansible-galaxy install -r requirements.yml 

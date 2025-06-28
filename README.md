@@ -105,7 +105,7 @@ c. **Create a config file**
    ```
 
 d. **Copy credentials and config files to your Ansible project**
-   - Place them in `files/cloudflared/` (create this directory if it doesn't exist).
+   - Place them in `roles/cloudflared/files/` (create this directory if it doesn't exist).
    - Example:
      ```sh
      mkdir -p files/cloudflared
@@ -116,28 +116,93 @@ d. **Copy credentials and config files to your Ansible project**
 After these steps, you can run the playbook and Cloudflared will be fully configured on your Raspberry Pi. 
 
 ## 6. Run the Playbook
+
+### Option 1: Full Setup (Recommended)
+Run the complete setup including optional Cloudflared:
 ```sh
 ansible-playbook -i inventory.ini site.yml -K
+```
+
+### Option 2: Base Setup Only
+Run only the core system setup (no Cloudflared):
+```sh
+ansible-playbook -i inventory.ini base-setup.yml -K
+```
+
+### Option 3: Cloudflared Setup Only
+Run only the Cloudflared setup (requires base setup first):
+```sh
+ansible-playbook -i inventory.ini cloudflared-setup.yml -K
+```
+
+### Option 4: Selective Execution with Tags
+Run specific components using tags:
+```sh
+# Install only Docker
+ansible-playbook -i inventory.ini site.yml --tags docker -K
+
+# Install only Cloudflared (if enabled)
+ansible-playbook -i inventory.ini site.yml --tags cloudflared -K
+
+# Skip Cloudflared setup
+ansible-playbook -i inventory.ini site.yml --skip-tags cloudflared -K
+
+# Run common and SSH setup only
+ansible-playbook -i inventory.ini site.yml --tags common,ssh -K
 ```
 
 When prompted for the Cloudflared Tunnel ID:
 - Enter your tunnel ID (without .json) to set up Cloudflared
 - Press Enter to skip Cloudflared setup entirely
 
-## 7. Next Steps
+## 7. Project Structure
+
+The project is now organized into modular roles:
+
+```
+pi-setup/
+├── roles/
+│   ├── common/          # Basic system packages and setup
+│   ├── docker/          # Docker installation and user setup
+│   ├── ssh/             # SSH service configuration
+│   └── cloudflared/     # Cloudflared tunnel setup
+├── group_vars/
+│   └── pi_group/
+│       └── vars.yml     # Group-specific variables
+├── site.yml             # Main playbook (full setup)
+├── base-setup.yml       # Core system setup only
+├── cloudflared-setup.yml # Cloudflared setup only
+└── inventory.ini        # Host inventory
+```
+
+### Available Tags
+- `common`: Basic system packages and setup
+- `docker`: Docker installation and user configuration
+- `ssh`: SSH service setup
+- `cloudflared`: Cloudflared tunnel installation and configuration
+
+## 8. Next Steps
 - Update the playbook as needed for your future phases (e.g., git repo clone, docker-compose systemd service).
 - Configure Cloudflared tunnel as needed (see comments in the playbook).
-
 
 ---
 
 ## Troubleshooting
 
+### Role-Specific Issues
+- **Common role**: Check if packages are available in the repository
+- **Docker role**: Verify internet connectivity for Docker installation
+- **SSH role**: Ensure SSH service is not blocked by firewall
+- **Cloudflared role**: Verify tunnel ID and credentials file exist
 
 ---
 
 ## Playbook Features
+- **Modular design** with separate roles for each component
+- **Selective execution** using tags and separate playbooks
+- **Configurable variables** in group_vars and role defaults
 - Installs Docker & docker-compose
-- Installs Cloudflared
+- Installs Cloudflared (optional)
 - Sets up systemd services for Cloudflared
+- Configurable user and group settings
 

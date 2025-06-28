@@ -1,0 +1,10 @@
+---
+# Cloudflared role default variables
+cloudflared_enabled: false
+cloudflared_tunnel_id: ""
+cloudflared_user: "{{ system_user | default('pi') }}"
+cloudflared_group: "{{ system_group | default('pi') }}"
+cloudflared_download_url: "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-arm64.deb"
+cloudflared_service_name: cloudflared
+cloudflared_config_dir: "/home/{{ cloudflared_user }}/.cloudflared"
+cloudflared_config_file: "{{ cloudflared_config_dir }}/config.yml" 

@@ -1,0 +1,6 @@
+---
+# SSH role handlers
+- name: restart ssh
+  systemd:
+    name: "{{ ssh_service_name }}"
+    state: restarted 

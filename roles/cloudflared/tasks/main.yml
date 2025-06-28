@@ -1,0 +1,62 @@
+---
+# Cloudflared role tasks
+- name: Install Cloudflared
+  shell: |
+    wget -q {{ cloudflared_download_url }}
+    sudo dpkg -i cloudflared-linux-arm64.deb
+  args:
+    creates: /usr/bin/cloudflared
+  when: cloudflared_enabled
+  tags: cloudflared
+
+- name: Create systemd service for Cloudflared
+  template:
+    src: cloudflared.service.j2
+    dest: /etc/systemd/system/{{ cloudflared_service_name }}.service
+    mode: '0644'
+  when: cloudflared_enabled
+  tags: cloudflared
+
+- name: Reload systemd
+  systemd:
+    daemon_reload: yes
+  when: cloudflared_enabled
+  tags: cloudflared
+
+- name: Enable and start Cloudflared service
+  systemd:
+    name: "{{ cloudflared_service_name }}.service"
+    enabled: yes
+    state: started
+  when: cloudflared_enabled
+  tags: cloudflared
+
+- name: Ensure .cloudflared directory exists
+  file:
+    path: "{{ cloudflared_config_dir }}"
+    state: directory
+    owner: "{{ cloudflared_user }}"
+    group: "{{ cloudflared_group }}"
+    mode: '0700'
+  when: cloudflared_enabled
+  tags: cloudflared
+
+- name: Copy Cloudflared credentials file
+  copy:
+    src: "{{ cloudflared_tunnel_id }}.json"
+    dest: "{{ cloudflared_config_dir }}/{{ cloudflared_tunnel_id }}.json"
+    owner: "{{ cloudflared_user }}"
+    group: "{{ cloudflared_group }}"
+    mode: '0600'
+  when: cloudflared_enabled
+  tags: cloudflared
+
+- name: Copy Cloudflared config file
+  copy:
+    src: config.yml
+    dest: "{{ cloudflared_config_file }}"
+    owner: "{{ cloudflared_user }}"
+    group: "{{ cloudflared_group }}"
+    mode: '0600'
+  when: cloudflared_enabled
+  tags: cloudflared 

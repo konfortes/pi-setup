@@ -1,0 +1,5 @@
+---
+# SSH role default variables
+ssh_service_name: ssh
+ssh_enabled: yes
+ssh_state: started 

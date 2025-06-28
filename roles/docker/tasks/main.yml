@@ -1,0 +1,16 @@
+---
+# Docker role tasks
+- name: Install Docker
+  shell: |
+    curl -fsSL {{ docker_install_script_url }} -o get-docker.sh
+    sh get-docker.sh
+  args:
+    creates: /usr/bin/docker
+  tags: docker
+
+- name: Add user to docker group
+  user:
+    name: "{{ docker_user }}"
+    groups: "{{ docker_group }}"
+    append: yes
+  tags: docker 

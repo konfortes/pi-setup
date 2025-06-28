@@ -1,0 +1,8 @@
+---
+# SSH role tasks
+- name: Ensure SSH service is enabled and running
+  systemd:
+    name: "{{ ssh_service_name }}"
+    enabled: "{{ ssh_enabled }}"
+    state: "{{ ssh_state }}"
+  tags: ssh 

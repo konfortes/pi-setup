@@ -1,0 +1,13 @@
+---
+# Common role default variables
+common_packages:
+  - git
+  - curl
+  - apt-transport-https
+  - ca-certificates
+  - software-properties-common
+  - openssh-server
+
+# User configuration
+system_user: pi
+system_group: pi 

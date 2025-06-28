@@ -1,0 +1,15 @@
+---
+# Group variables for pi_group
+system_user: pi
+system_group: pi
+
+# Cloudflared configuration
+cloudflared_enabled: false
+cloudflared_tunnel_id: ""
+
+# SSH configuration
+ssh_enabled: yes
+ssh_state: started
+
+# Docker configuration
+docker_enabled: yes 

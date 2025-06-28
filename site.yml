@@ -8,116 +8,20 @@
       private: no
       default: ""
 
-  tasks:
-    - name: Install required apt packages
-      apt:
-        name:
-          - git
-          - curl
-          - apt-transport-https
-          - ca-certificates
-          - software-properties-common
-          - openssh-server
-        state: present
-        update_cache: yes
+  pre_tasks:
+    - name: Set cloudflared variables
+      set_fact:
+        cloudflared_enabled: "{{ cloudflared_tunnel_id | length > 0 }}"
 
-    - name: Install Docker
-      shell: |
-        curl -fsSL https://get.docker.com -o get-docker.sh
-        sh get-docker.sh
-      args:
-        creates: /usr/bin/docker
+  roles:
+    - common
+    - docker
+    - ssh
+    - { role: cloudflared, when: cloudflared_enabled }
 
-    - name: Add user to docker group
-      user:
-        name: pi
-        groups: docker
-        append: yes
-
-    - name: Install Cloudflared
-      shell: |
-        wget -q https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-arm64.deb
-        sudo dpkg -i cloudflared-linux-arm64.deb
-      args:
-        creates: /usr/bin/cloudflared
-      when: cloudflared_tunnel_id | length > 0
-
-    # --- SYSTEMD SERVICES ---
-    # The following tasks create systemd unit files for each service
-
-    - name: Create systemd service for Cloudflared
-      copy:
-        dest: /etc/systemd/system/cloudflared.service
-        content: |
-          [Unit]
-          Description=Cloudflare Tunnel
-          After=network.target
-
-          [Service]
-          ExecStart=/usr/bin/cloudflared tunnel run {{ cloudflared_tunnel_id }}
-          Restart=always
-          User=pi
-
-          [Install]
-          WantedBy=multi-user.target
-      when: cloudflared_tunnel_id | length > 0
-      # TODO: You must manually create and configure your Cloudflare tunnel and credentials file.
-
-    - name: Reload systemd
-      systemd:
-        daemon_reload: yes
-      when: cloudflared_tunnel_id | length > 0
-
-    - name: Enable and start Cloudflared service
-      systemd:
-        name: cloudflared.service
-        enabled: yes
-        state: started
-      when: cloudflared_tunnel_id | length > 0
-
-    - name: Ensure .cloudflared directory exists
-      file:
-        path: /home/pi/.cloudflared
-        state: directory
-        owner: pi
-        group: pi
-        mode: '0700'
-      when: cloudflared_tunnel_id | length > 0
-
-    - name: Copy Cloudflared credentials file
-      copy:
-        src: "files/cloudflared/{{ cloudflared_tunnel_id }}.json"
-        dest: "/home/pi/.cloudflared/{{ cloudflared_tunnel_id }}.json"
-        owner: pi
-        group: pi
-        mode: '0600'
-      when: cloudflared_tunnel_id | length > 0
-      # You must generate this file manually as described in the README
-
-    - name: Copy Cloudflared config file
-      copy:
-        src: files/cloudflared/config.yml  # <-- Replace with your actual config file if you have one
-        dest: /home/pi/.cloudflared/config.yml
-        owner: pi
-        group: pi
-        mode: '0600'
-      when: cloudflared_tunnel_id | length > 0
-      # Optional: Only if you have a config.yml 
-
-    - name: Ensure SSH service is enabled and running
-      systemd:
-        name: ssh
-        enabled: yes
-        state: started
-
+  post_tasks:
     - name: "PAUSE: Manual steps for Cloudflared setup (if tunnel ID provided)"
       pause:
         prompt: |
-          "{% if cloudflared_tunnel_id | length > 0 %}Manual steps required!\n\n1. Go to the Cloudflare dashboard and set up CNAME records:\n   - n8n.konfortes.uk -> {{ cloudflared_tunnel_id }}.cfargotunnel.com\n   - ssh.konfortes.uk -> {{ cloudflared_tunnel_id }}.cfargotunnel.com\n\n2. Set up SSH keys for secure access:\n   - Generate SSH key pair: ssh-keygen -t ed25519 -C 'your-email@example.com'\n   - Copy public key to Pi: ssh-copy-id pi@ssh.konfortes.uk\n\n3. To SSH to your Pi, use:\n   - ssh pi@ssh.konfortes.uk\n\nWhen you are done, press Enter to finish the playbook.{% else %}Cloudflared setup skipped. Press Enter to finish the playbook.{% endif %}\n\nPress Enter to continue..."
-      when: cloudflared_tunnel_id | length > 0
-
-  handlers:
-    - name: restart ssh
-      systemd:
-        name: ssh
-        state: restarted 
+          "{% if cloudflared_enabled %}Manual steps required!\n\n1. Go to the Cloudflare dashboard and set up CNAME records:\n   - n8n.konfortes.uk -> {{ cloudflared_tunnel_id }}.cfargotunnel.com\n   - ssh.konfortes.uk -> {{ cloudflared_tunnel_id }}.cfargotunnel.com\n\n2. Set up SSH keys for secure access:\n   - Generate SSH key pair: ssh-keygen -t ed25519 -C 'your-email@example.com'\n   - Copy public key to Pi: ssh-copy-id pi@ssh.konfortes.uk\n\n3. To SSH to your Pi, use:\n   - ssh pi@ssh.konfortes.uk\n\nWhen you are done, press Enter to finish the playbook.{% else %}Cloudflared setup skipped. Press Enter to finish the playbook.{% endif %}\n\nPress Enter to continue..."
+      when: cloudflared_enabled 

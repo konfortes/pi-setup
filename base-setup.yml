@@ -1,0 +1,8 @@
+---
+- hosts: pi_group
+  become: true
+
+  roles:
+    - common
+    - docker
+    - ssh 

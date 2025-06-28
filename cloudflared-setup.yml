@@ -1,0 +1,37 @@
+---
+- hosts: pi_group
+  become: true
+
+  vars_prompt:
+    - name: "cloudflared_tunnel_id"
+      prompt: "Enter your Cloudflared Tunnel ID (without .json)"
+      private: no
+
+  pre_tasks:
+    - name: Set cloudflared variables
+      set_fact:
+        cloudflared_enabled: true
+
+  roles:
+    - cloudflared
+
+  post_tasks:
+    - name: "PAUSE: Manual steps for Cloudflared setup"
+      pause:
+        prompt: |
+          Manual steps required!
+
+          1. Go to the Cloudflare dashboard and set up CNAME records:
+             - n8n.konfortes.uk -> {{ cloudflared_tunnel_id }}.cfargotunnel.com
+             - ssh.konfortes.uk -> {{ cloudflared_tunnel_id }}.cfargotunnel.com
+
+          2. Set up SSH keys for secure access:
+             - Generate SSH key pair: ssh-keygen -t ed25519 -C 'your-email@example.com'
+             - Copy public key to Pi: ssh-copy-id pi@ssh.konfortes.uk
+
+          3. To SSH to your Pi, use:
+             - ssh pi@ssh.konfortes.uk
+
+          When you are done, press Enter to finish the playbook.
+
+          Press Enter to continue... 
