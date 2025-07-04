@@ -17,7 +17,8 @@
     - common
     - docker
     - ssh
-    - { role: cloudflared, when: cloudflared_enabled }
+    - cloudflared
+    - n8n
 
   post_tasks:
     - name: "PAUSE: Manual steps for Cloudflared setup (if tunnel ID provided)"

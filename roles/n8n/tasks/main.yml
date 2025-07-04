@@ -1,0 +1,27 @@
+---
+- name: Clone n8n repository
+  git:
+    repo: "https://github.com/konfortes/my-n8n"
+    dest: "{{ n8n_clone_dest }}"
+    version: main
+    update: yes
+  tags: n8n
+
+- name: Create systemd service for n8n docker-compose
+  template:
+    src: n8n-docker-compose.service.j2
+    dest: /etc/systemd/system/n8n-docker-compose.service
+    mode: '0644'
+  tags: n8n
+
+- name: Reload systemd
+  systemd:
+    daemon_reload: yes
+  tags: n8n
+
+- name: Enable and start n8n docker-compose service
+  systemd:
+    name: n8n-docker-compose.service
+    enabled: yes
+    state: started
+  tags: n8n 

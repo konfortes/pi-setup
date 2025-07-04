@@ -206,3 +206,34 @@ pi-setup/
 - Sets up systemd services for Cloudflared
 - Configurable user and group settings
 
+---
+
+## n8n Automation Stack
+
+This playbook now includes an optional role to automatically deploy and manage the [my-n8n](https://github.com/konfortes/my-n8n) stack on your Raspberry Pi using Docker Compose.
+
+### What it does
+- Clones the `my-n8n` repository to `/home/pi/my-n8n` (or your configured user)
+- Sets up a systemd service to run `docker compose up -d` for the stack at boot
+- Ensures the stack is always running and restarts on failure
+
+### How to enable
+- The role is included by default in `site.yml`. To skip it, use `--skip-tags n8n`.
+
+### Customization
+- To change the clone location or repo, edit the variables in `roles/n8n/defaults/main.yml`.
+
+### Example usage
+```sh
+ansible-playbook -i inventory.ini site.yml -K
+```
+
+### Available Tags (updated)
+- `common`: Basic system packages and setup
+- `docker`: Docker installation and user configuration
+- `ssh`: SSH service setup
+- `cloudflared`: Cloudflared tunnel installation and configuration
+- `n8n`: n8n stack deployment and management
+
+---
+

@@ -1,0 +1,4 @@
+---
+n8n_repo_url: "https://github.com/konfortes/my-n8n"
+n8n_repo_version: "main"
+n8n_clone_dest: "/home/{{ system_user }}/projects/my-n8n" 
